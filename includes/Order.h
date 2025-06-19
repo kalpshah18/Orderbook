@@ -14,6 +14,9 @@ class Order {
         Order(OrderType orderType, OrderId orderId, Side side, Price price, Quantity quantity)
         : orderType_(orderType), orderId_(orderId), side_(side), price_(price), initialQuantity_(quantity), remainingQuantity_(quantity) {}
 
+        Order(OrderId orderId, Side side, Quantity quantity)
+        : Order(OrderType::Market, orderId, side, Constants::InvalidPrice, quantity) {}
+
         OrderType GetOrderType() const {
             return orderType_;
         }
@@ -37,11 +40,19 @@ class Order {
         }
         bool IsFilled() const {
             return remainingQuantity_ == 0;
-        }        void Fill(Quantity quantity) {
+        }
+        void Fill(Quantity quantity) {
             if (quantity > remainingQuantity_) {
                 throw std::logic_error(std::format("Cannot fill {} for order {}. Remaining quantity is only {}.", quantity, orderId_, remainingQuantity_));
             }
             remainingQuantity_ -= quantity;
+        }
+        void ToGoodTillCancel(Price price)
+        {
+            if (GetOrderType() == OrderType::Market) throw std::logic_error(std::format("Order ({}) cannot have its price adjusted, only market orders can.", GetOrderId()));
+
+            price_ = price;
+            orderType_ = OrderType::GoodTillCancel;
         }
       private:
         OrderType orderType_;
